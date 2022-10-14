@@ -16,17 +16,9 @@ from binaryninja import *
 from BinjaNxt.Nxt import Nxt
 #from Nxt import Nxt
 
-plugin_name = 'BinjaNxt'
-
-
 def run(bv: BinaryView):
-    nxt = Nxt()
-    if not nxt.run(bv):
-        show_message_box(plugin_name, 'Refactoring failed! Check the log for more information',
-                         MessageBoxButtonSet.OKButtonSet, MessageBoxIcon.ErrorIcon)
-        return
-
-    show_message_box(plugin_name, 'Done!', MessageBoxButtonSet.OKButtonSet, MessageBoxIcon.InformationIcon)
+    nxt = Nxt(bv)
+    nxt.start()
 
 
 def __run(bv: BinaryView, addr):

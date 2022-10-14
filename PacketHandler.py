@@ -11,21 +11,19 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with BinjaNxt.
 If not, see <https://www.gnu.org/licenses/>.
 """
-from binaryninja import *
-
-from BinjaNxt.NxtUtils import *
-from BinjaNxt.PacketHandlerInfo import *
 from BinjaNxt.JagTypes import *
 from BinjaNxt.NxtAnalysisData import NxtAnalysisData
-
 from BinjaNxt.NxtUtils import *
+from BinjaNxt.NxtUtils import *
+from BinjaNxt.PacketHandlerInfo import *
 from BinjaNxt.PacketHandlerInfo import PacketHandlerInfo, server_packet_names
+from binaryninja import *
 
 
-#from NxtAnalysisData import NxtAnalysisData
-#from JagTypes import *
-#from NxtUtils import *
-#from PacketHandlerInfo import *
+# from NxtAnalysisData import NxtAnalysisData
+# from JagTypes import *
+# from NxtUtils import *
+# from PacketHandlerInfo import *
 
 
 class PacketHandlers:
@@ -84,7 +82,8 @@ class PacketHandlers:
                 except ValueError:
                     # TODO: As of version 922-4 there is one unhandled case with IfSetPlayerHeadIgnoreWorn
                     # See: corresponding todo in __find_packet_handler_vtable
-                    log_error('vtable issue with ' + handler.name + ' - ' + str(handler.opcode) + ', ' + hex(handler.vtable))
+                    log_error(
+                        'vtable issue with ' + handler.name + ' - ' + str(handler.opcode) + ', ' + hex(handler.vtable))
                     handler.vtable = None
                     handle_packet_addr = None
 
@@ -97,17 +96,13 @@ class PacketHandlers:
                         change_func_name(handle_packet_func, '{}::HandlePacket'.format(qualified_handler_name))
 
                         if len(handle_packet_func.parameter_vars) >= 2:
-                            change_var(handle_packet_func.parameter_vars[1], 'pPacket', Type.pointer(bv.arch, self.found_data.types.packet))
-        
+                            change_var(handle_packet_func.parameter_vars[1], 'pPacket',
+                                       Type.pointer(bv.arch, self.found_data.types.packet))
+
         return True
 
-
     def get_qualified_handler_name(self, handler_name: str) -> (str, str):
-        """
 
-        @param handler_name:
-        @return: The fully qualified name as the first value and the "clean" handler name as the second
-        """
         clean_name = ""
         for s in handler_name.split('_'):
             if len(s) < 2:
@@ -248,7 +243,7 @@ class PacketHandlers:
                 continue
 
             isregister = True if self.found_data.register_packet_handler_addr is not None \
-                and dest_addr == self.found_data.register_packet_handler_addr else False
+                                 and dest_addr == self.found_data.register_packet_handler_addr else False
 
             if dest_addr not in visited_func_addrs or isregister:
                 if not isregister:
@@ -258,7 +253,8 @@ class PacketHandlers:
                 if fun is None:
                     continue
 
-                self.__find_packet_handler_registrations_recurse(bv, called_func, insn, fun, visited_func_addrs, call_insn)
+                self.__find_packet_handler_registrations_recurse(bv, called_func, insn, fun, visited_func_addrs,
+                                                                 call_insn)
 
         return
 
@@ -427,7 +423,7 @@ class PacketHandlers:
                 continue
 
             isregister = True if self.found_data.register_packet_handler_addr is not None \
-                and dest_addr == self.found_data.register_packet_handler_addr else False
+                                 and dest_addr == self.found_data.register_packet_handler_addr else False
 
             if dest_addr not in visited_func_addrs or isregister:
                 if not isregister:

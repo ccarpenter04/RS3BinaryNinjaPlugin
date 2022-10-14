@@ -11,14 +11,18 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with BinjaNxt.
 If not, see <https://www.gnu.org/licenses/>.
 """
+from binaryninja import *
+from binaryninja.log import log_error, log_warn, log_info
+from binaryninja.plugin import BackgroundTaskThread
+
 from BinjaNxt.ClientTcpMessage import ClientTcpMessage
 from BinjaNxt.JagTypes import *
 from BinjaNxt.NxtAnalysisData import NxtAnalysisData
 from BinjaNxt.NxtUtils import *
 from BinjaNxt.PacketHandler import PacketHandlers
-from binaryninja import *
-from binaryninja.log import log_error, log_warn, log_info
+
 from BinjaNxt.Isaac import Isaac
+from BinjaNxt.Client import Client
 
 
 # from NxtAnalysisData import NxtAnalysisData
@@ -26,32 +30,47 @@ from BinjaNxt.Isaac import Isaac
 # from NxtUtils import *
 
 
-class Nxt:
+class Nxt(BackgroundTaskThread):
+    bv: BinaryView
+
     found_data: NxtAnalysisData
+
     packet_handlers: PacketHandlers
     client_tcp_message: ClientTcpMessage
     isaac_cipher: Isaac
+    client: Client
 
-    def __init__(self):
+    def __init__(self, binv: BinaryView):
+        BackgroundTaskThread.__init__(self, 'Beginning pattern recognition for NXT structures', True)
+        self.bv = binv
         self.found_data = NxtAnalysisData()
         self.packet_handlers = PacketHandlers(self.found_data)
         self.client_tcp_message = ClientTcpMessage(self.found_data)
         self.isaac_cipher = Isaac(self.found_data)
+        self.client = Client(self.found_data)
 
-    def run(self, bv: BinaryView) -> bool:
-        if bv is None:
+    def run(self) -> bool:
+        if self.bv is None:
             return False
 
-        self.found_data.types.create_types(bv)
-        if not self.refactor_app_init(bv):
+        self.found_data.types.create_types(self.bv)
+
+        if not self.refactor_app_init(self.bv):
             log_error('Failed to refactor jag::App::MainInit')
-        if not self.refactor_connection_manager(bv):
+        if not self.refactor_connection_manager(self.bv):
             log_error('Failed to refactor jag::ConnectionManager')
-        if not self.packet_handlers.run(bv, self.found_data.connection_manager_ctor_addr):
+        if not self.packet_handlers.run(self.bv, self.found_data.connection_manager_ctor_addr):
             log_error('Failed to refactor packets')
-        self.client_tcp_message.run(bv)
-        if not self.isaac_cipher.run(bv): log_error("Failed to refactor the Isaac Cipher")
+        self.client_tcp_message.run(self.bv)
+        if not self.isaac_cipher.run(self.bv):
+            log_error("Failed to refactor the Isaac Cipher")
+        # ref_count = len(list(bv.get_code_refs(0x14001ee10)))
+        # log_info("jag::Client::SetMainState has {}".format(hex(ref_count)))
+        if not self.client.run(self.bv):
+            # TODO define MainState
+            log_error("Failed to refactor jag::Client::SetMainState(jag::Client*, MainState)")
         self.found_data.print_info()
+        show_message_box("BinjaNxt", 'Done!', MessageBoxButtonSet.OKButtonSet, MessageBoxIcon.InformationIcon)
         return True
 
     def refactor_app_init(self, bv: BinaryView) -> bool:

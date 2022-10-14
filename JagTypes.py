@@ -30,9 +30,38 @@ class JagTypes:
     packet_name = 'jag::Packet'
     packet: Optional[Type] = None
 
+    coord_grid_name = 'jag::game::CoordGrid'
+    coord_grid: Optional[Type] = None
+
+    vector2_name = 'jag::math::Vector2'
+    vector2: Optional[Type] = None
+
+    vector3_name = 'jag::math::Vector3'
+    vector3: Optional[Type] = None
+
+    frustrum_name = 'jag::math::Frustrum'
+    frustrum: Optional[Type] = None
+
+    hitmark_name = 'jag::Hitmark'
+    hitmark: Optional[Type] = None
+
+    player_game_state_name = 'jag::game::PlayerGameState'
+    player_game_state: Optional[Type] = None
+
+    player_stat_name = 'jag::game::PlayerStat'
+    player_stat: Optional[Type] = None
+
+    # PlayerSkill may not actually be a type that Jagex has internally,
+    # however it does correspond with the memory structure they're utilizing
+    player_skill_name = 'jag::game::PlayerSkill'
+    player_skill: Optional[Type] = None
+
+    player_skill_xp_table_name = 'jag::game::PlayerSkillXPTable'
+    player_skill_xp_table: Optional[Type] = None
+
     def create_types(self, bv: BinaryView):
         t_isaac = Type.structure(members=[
-            (Type.int(4, False), 'valuesRemaining'),  # This may actually be value used, investigate.
+            (Type.int(4, False), 'valuesRemaining'),  # This may actually be values used, investigate.
             (Type.array(Type.int(4, False), 256), 'results'),
             (Type.array(Type.int(4, False), 256), 'mm'),
             # One of these is the counter, another is the accumulator
@@ -42,6 +71,87 @@ class JagTypes:
         ], packed=True)
         bv.define_user_type(self.isaac_name, t_isaac)
         self.isaac = bv.get_type_by_name(self.isaac_name)
+
+        t_coord_grid = Type.structure(members=[
+            (Type.int(4, True), 'plane'),
+            (Type.int(4, True), 'x'),
+            (Type.int(4, True), 'y')
+        ], packed=True)
+        bv.define_user_type(self.coord_grid_name, t_coord_grid)
+        self.coord_grid = bv.get_type_by_name(self.coord_grid_name)
+
+        t_vector2 = Type.structure(members=[
+            (Type.float(4), 'x'),
+            (Type.float(4), 'y')
+        ], packed=True)
+        bv.define_user_type(self.vector2_name, t_vector2)
+        self.vector2 = bv.get_type_by_name(self.vector2_name)
+
+        t_vector3 = Type.structure(members=[
+            (Type.float(4), 'x'),
+            (Type.float(4), 'y'),
+            (Type.float(4), 'z')
+        ], packed=True)
+        bv.define_user_type(self.vector3_name, t_vector3)
+        self.vector3 = bv.get_type_by_name(self.vector3_name)
+
+        t_frustrum = Type.structure(members=[
+            (Type.array(Type.float(4), 72), 'values')
+        ], packed=True)
+        bv.define_user_type(self.frustrum_name, t_frustrum)
+        self.frustrum = bv.get_type_by_name(self.frustrum_name)
+
+        t_hitmark = Type.structure(members=[
+            (Type.int(4), 'type'),
+            (Type.int(4), 'damage'),
+            (Type.int(4), 'cycle'),
+            (Type.int(4), 'unknown1'),
+            (Type.int(4), 'unknown2'),
+            (Type.int(4), 'unknown3')
+        ], packed=True)
+        bv.define_user_type(self.hitmark_name, t_hitmark)
+        self.hitmark = bv.get_type_by_name(self.hitmark_name)
+
+        t_player_skill_xp_table = Type.structure(members=[
+            (Type.int(8), 'unknown_1'),
+            # This is usually either 99 or 120
+            (Type.int(8), 'levels'),
+            # The middle argument is invalid, not sure what it should be. (Type.pointer(bv.arch, bv.parse_type_string("int"), 'experience')),
+        ], packed=True)
+        bv.define_user_type(self.player_skill_xp_table_name, t_player_skill_xp_table)
+        self.player_skill_xp_table = bv.get_type_by_name(self.player_skill_xp_table_name)
+
+        t_player_skill = Type.structure(members=[
+            (Type.int(4), 'index'),
+            (Type.int(4), 'max_level'),
+            (Type.bool(), 'members'),
+            (Type.bool(), 'unknown_1'),
+            (Type.int(4), 'f2p_experience_cap'),
+            (Type.int(4), 'f2p_level_cap'),
+            (Type.int(4), 'unknown_2'),
+            (Type.pointer(bv.arch, bv.get_type_by_name(self.player_skill_xp_table_name)), 'experience_table'),
+            (Type.bool(), 'is_normal_skill'),  # This is false if it's an elite skill
+        ], packed=True)
+        bv.define_user_type(self.player_skill_name, t_player_skill)
+        self.player_skill = bv.get_type_by_name(self.player_skill_name)
+
+        t_player_stat = Type.structure(members=[
+            (Type.pointer(bv.arch, bv.get_type_by_name(self.player_skill_name)), 'skill'),
+            (Type.int(4), 'unknown1'),
+            (Type.int(4), 'experience'),
+            (Type.int(4), 'base_level'),
+            (Type.int(4), 'current_level')
+        ], packed=True)
+        bv.define_user_type(self.player_stat_name, t_player_stat)
+        self.player_stat = bv.get_type_by_name(self.player_stat_name)
+
+        t_player_game_state = Type.structure(members=[
+            (Type.pointer(bv.arch, Type.void()), 'unknown_string'),
+            (Type.int(8), 'stat_quantity'),
+            (Type.pointer(bv.arch, bv.get_type_by_name(self.player_stat_name)), 'stats')
+        ], packed=True)
+        bv.define_user_type(self.player_game_state_name, t_player_game_state)
+        self.player_game_state = bv.get_type_by_name(self.player_game_state_name)
 
         t_heap_interface = Type.structure(packed=True)
         bv.define_user_type(self.heap_interface_name, t_heap_interface)
