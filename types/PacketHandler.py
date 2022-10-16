@@ -37,8 +37,8 @@ class PacketHandlers:
         self.found_data = found_data
         self.found_data.packet_handlers = [None] * self.__EXPECTED_NUM_SERVER_HANDLERS
 
-    def run(self, bv: BinaryView, connection_manager_ctor_addr: int) -> bool:
-        packet_handler_ctor = self.find_packet_handler_ctor_and_register(bv, connection_manager_ctor_addr)
+    def run(self, bv: BinaryView) -> bool:
+        packet_handler_ctor = self.find_packet_handler_ctor_and_register(bv)
         if packet_handler_ctor is None:
             return False
 
@@ -52,7 +52,7 @@ class PacketHandlers:
             log_error('Failed to initialize PacketHandler info')
             return False
 
-        if not self.__initialize_server_packet_handler_names(bv, connection_manager_ctor_addr):
+        if not self.__initialize_server_packet_handler_names(bv, self.found_data.connection_manager_ctor_addr):
             log_error('Failed to initialize PacketHandler names')
             return False
 
@@ -94,14 +94,14 @@ class PacketHandlers:
                         print('no func?')
                     else:
                         change_func_name(handle_packet_func, '{}::HandlePacket'.format(qualified_handler_name))
-
                         if len(handle_packet_func.parameter_vars) >= 2:
                             change_var(handle_packet_func.parameter_vars[1], 'pPacket',
                                        Type.pointer(bv.arch, self.found_data.types.packet))
 
         return True
 
-    def get_qualified_handler_name(self, handler_name: str) -> (str, str):
+    @staticmethod
+    def get_qualified_handler_name(handler_name: str) -> (str, str):
 
         clean_name = ""
         for s in handler_name.split('_'):
@@ -343,11 +343,9 @@ class PacketHandlers:
 
         return None
 
-    def find_packet_handler_ctor_and_register(self,
-                                              bv: BinaryView,
-                                              connection_manager_ctor_addr: int) -> Optional[Function]:
+    def find_packet_handler_ctor_and_register(self, bv: BinaryView) -> Optional[Function]:
         print('Searching for jag::PacketHandler::ctor')
-        connection_manager_ctor = bv.get_function_at(connection_manager_ctor_addr)
+        connection_manager_ctor = bv.get_function_at(self.found_data.connection_manager_ctor_addr)
 
         visited_func_addrs: list[int] = []
         call_num: int = 0

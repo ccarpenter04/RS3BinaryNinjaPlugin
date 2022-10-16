@@ -13,7 +13,7 @@ If not, see <https://www.gnu.org/licenses/>.
 """
 from typing import Optional
 
-from binaryninja import Function, Type, Undetermined, Variable, BinaryView, RegisterName, log_warn
+from binaryninja import Function, Type, Undetermined, Variable, BinaryView, RegisterName, log_debug
 from binaryninja import LowLevelILInstruction, LowLevelILCall
 
 RCX = RegisterName('rcx')
@@ -47,7 +47,7 @@ def int32(x: int):
 
 def ensure_func_analyzed(func: Function) -> bool:
     if func.analysis_skipped:
-        log_warn('Function {} was not analyzed. Reason {}'.format(func.name, func.analysis_skip_reason))
+        log_debug('Function {} was not analyzed. Reason {}'.format(func.name, func.analysis_skip_reason))
         return False
     return True
 
@@ -70,16 +70,14 @@ def is_valid_function_call(bv: BinaryView, llil: LowLevelILInstruction) -> (bool
 
 def get_called_func(bv: BinaryView, llil: LowLevelILCall) -> Optional[Function]:
     """
-    Gets the function that is being called by the given the instruction
-    @param bv:
-    @param llil:
-    @return: None if the destination can't be determined otherwise the Function that is called.
+    Gets the function that is being called by the given the instruction.
+    If the call cannot be resolved or is a virtual function call, this function will return None
     """
-    call_dest = llil.dest.value
-    if isinstance(call_dest, Undetermined):
+    target = llil.dest.value
+    if isinstance(target, Undetermined):
         return None
 
-    return bv.get_function_at(call_dest.value)
+    return bv.get_function_at(target.value)
 
 
 def change_comment(bv: BinaryView, addr: int, desired_comment: str):

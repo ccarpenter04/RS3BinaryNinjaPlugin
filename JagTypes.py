@@ -59,6 +59,9 @@ class JagTypes:
     player_skill_xp_table_name = 'jag::game::PlayerSkillXPTable'
     player_skill_xp_table: Optional[Type] = None
 
+    logged_in_player_name = "jag::LoggedInPlayer"
+    logged_in_player: Optional[Type] = None
+
     def create_types(self, bv: BinaryView):
         t_isaac = Type.structure(members=[
             (Type.int(4, False), 'valuesRemaining'),  # This may actually be values used, investigate.
@@ -115,8 +118,8 @@ class JagTypes:
         t_player_skill_xp_table = Type.structure(members=[
             (Type.int(8), 'unknown_1'),
             # This is usually either 99 or 120
-            (Type.int(8), 'levels'),
-            # The middle argument is invalid, not sure what it should be. (Type.pointer(bv.arch, bv.parse_type_string("int"), 'experience')),
+            (Type.int(8), 'levels_available'),
+            # The middle argument is invalid, not sure what it should be,
         ], packed=True)
         bv.define_user_type(self.player_skill_xp_table_name, t_player_skill_xp_table)
         self.player_skill_xp_table = bv.get_type_by_name(self.player_skill_xp_table_name)
@@ -146,7 +149,7 @@ class JagTypes:
         self.player_stat = bv.get_type_by_name(self.player_stat_name)
 
         t_player_game_state = Type.structure(members=[
-            (Type.pointer(bv.arch, Type.void()), 'unknown_string'),
+            (Type.pointer(bv.arch, Type.void()), 'unknown_ptr_to_a_string'),
             (Type.int(8), 'stat_quantity'),
             (Type.pointer(bv.arch, bv.get_type_by_name(self.player_stat_name)), 'stats')
         ], packed=True)
@@ -188,3 +191,16 @@ class JagTypes:
         ], packed=True)
         bv.define_user_type(self.packet_name, t_packet)
         self.packet = bv.get_type_by_name(self.packet_name)
+
+        t_logged_in_player = Type.structure(members=[
+            (Type.pointer(bv.arch, bv.get_type_by_name(self.client_name)), 'client'),
+            (Type.array(Type.int(1)), 32, 'unknown_1'),
+            (Type.bool()),
+            (Type.array(Type.int(1)), 28, 'unknown_2'),
+            (Type.int(4), "player_node_index"),
+            (Type.array(Type.int(1)), 28, 'unknown_3'),
+            # eastl::string display_name == how many bytes?
+            (Type.array(Type.int(1)), 112, 'unknown_4')
+        ], packed=True)
+        bv.define_user_type(self.logged_in_player_name, t_logged_in_player)
+        self.logged_in_player = bv.get_type_by_name(self.logged_in_player_name)
