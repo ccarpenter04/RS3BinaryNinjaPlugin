@@ -81,7 +81,8 @@ class ConnectionManager:
                 break
 
         if len(candidates) != 1:
-            log_error('Failed to isolate jag::ConnectionManager::ctor.\n    Remaining candidates: {}'.format(candidates))
+            log_error(
+                'Failed to isolate jag::ConnectionManager::ctor.\n    Remaining candidates: {}'.format(candidates))
             return False
 
         insn_using_current_time: Optional[LowLevelILInstruction]
@@ -91,24 +92,23 @@ class ConnectionManager:
 
         current_time_addr = self.find_current_time_addr(insn_using_current_time, ctor_instructions)
         if current_time_addr is None:
-            log_error('Failed to find address of jag::FrameTime::m_CurrentTimeMS')
+            log_debug('Failed to find address of jag::FrameTime::m_CurrentTimeMS')
         else:
             self.found_data.current_time_ms_addr = current_time_addr
             bv.define_user_data_var(self.found_data.current_time_ms_addr, Type.int(8, False),
                                     self.found_data.types.current_time_ms_name)
-
-        log_info('Determining size of jag::ConnectionManager')
         ctor_refs = list(bv.get_code_refs(ctor.start))
         if len(ctor_refs) != 1:
-            log_error('Expected 1 xref to jag::ConnectionManager::ctor but got {}'.format(len(ctor_refs)))
+            log_debug('Expected 1 xref to jag::ConnectionManager::ctor but got {}'.format(len(ctor_refs)))
             return False
 
         allocation = find_allocation_from_ctor_call(bv,
-                                                    list(ctor_refs[0].function.llil_instructions),
-                                                    ctor_refs[0].function.get_llil_at(ctor_refs[0].address),
-                                                    self.found_data.checked_alloc_addr)
+                                                    list(
+                                                        ctor_refs[0].function.llil_instructions),
+                                                        ctor_refs[0].function.get_llil_at(ctor_refs[0].address),
+                                                        self.found_data.checked_alloc_addr)
         if allocation is None:
-            log_error('Failed to determine size of jag::ConnectionManager')
+            log_debug('Failed to determine size of jag::ConnectionManager')
             return False
 
         with StructureBuilder.builder(bv, QualifiedName(self.found_data.types.conn_mgr_name)) as builder:

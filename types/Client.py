@@ -30,7 +30,7 @@ class Client:
         if not self.find_main_init(bv):
             Logger.log_warn("Failed to locate jag::Client::MainInit(jag::SystemInitParams const&)")
         if not self.find_checked_alloc_and_client_instance(bv):
-            Logger.log_warn("Unable to find jag::HeapInterface::CheckedAlloc and/or define client")
+            Logger.log_warn("Failed to locate jag::HeapInterface::CheckedAlloc and/or define client")
         if not self.find_set_main_state(bv):
             Logger.log_warn("Failed to locate jag::Client::SetMainState(Client*, MainState)")
 
@@ -67,6 +67,11 @@ class Client:
         change_func_name(located_func, 'jag::Client::SetMainState')
         change_var(located_func.parameter_vars[0], "pClient",
                    Type.pointer(bv.arch, self.found_data.types.client))
+        for insn in located_func.llil.instructions:
+            if not isinstance(insn, LowLevelILConstPtr):
+                continue
+            log_warn("{}".format(insn.value))
+
         return True
 
     def find_main_init(self, bv: BinaryView) -> bool:

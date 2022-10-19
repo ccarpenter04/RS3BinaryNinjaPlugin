@@ -62,6 +62,9 @@ class JagTypes:
     logged_in_player_name = "jag::LoggedInPlayer"
     logged_in_player: Optional[Type] = None
 
+    console_name = "jag::game::Console"
+    console: Optional[Type] = None
+
     def create_types(self, bv: BinaryView):
         t_isaac = Type.structure(members=[
             (Type.int(4, False), 'valuesRemaining'),  # This may actually be values used, investigate.
@@ -194,13 +197,19 @@ class JagTypes:
 
         t_logged_in_player = Type.structure(members=[
             (Type.pointer(bv.arch, bv.get_type_by_name(self.client_name)), 'client'),
-            (Type.array(Type.int(1)), 32, 'unknown_1'),
+            (Type.array(Type.int(1), 32), 'unknown_1'),
             (Type.bool()),
-            (Type.array(Type.int(1)), 28, 'unknown_2'),
+            (Type.array(Type.int(1), 28), 'unknown_2'),
             (Type.int(4), "player_node_index"),
-            (Type.array(Type.int(1)), 28, 'unknown_3'),
-            # eastl::string display_name == how many bytes?
-            (Type.array(Type.int(1)), 112, 'unknown_4')
+            (Type.array(Type.int(1), 28), 'unknown_3'),
+            # eastl::string display_name == how many bytes do they occupy?
+            (Type.array(Type.int(1), 112), 'unknown_4')
         ], packed=True)
         bv.define_user_type(self.logged_in_player_name, t_logged_in_player)
         self.logged_in_player = bv.get_type_by_name(self.logged_in_player_name)
+
+        t_console = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.console_name, t_console)
+        self.console = bv.get_type_by_name(self.console_name)

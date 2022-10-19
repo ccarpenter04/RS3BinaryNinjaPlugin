@@ -23,6 +23,8 @@ from binaryninja.log import log_error
 from binaryninja.plugin import BackgroundTaskThread
 
 from BinjaNxt.ConnectionManager import ConnectionManager
+from BinjaNxt.TimeTools import TimeTools
+from BinjaNxt.Console import Console
 
 
 # from NxtAnalysisData import NxtAnalysisData
@@ -39,6 +41,8 @@ class Nxt(BackgroundTaskThread):
     client_tcp_message: ClientTcpMessage
     isaac_cipher: Isaac
     connection_manager: ConnectionManager
+    console: Console
+    time_tools: TimeTools
     client: Client
 
     def __init__(self, binv: BinaryView):
@@ -49,6 +53,8 @@ class Nxt(BackgroundTaskThread):
         self.client_tcp_message = ClientTcpMessage(self.found_data)
         self.isaac_cipher = Isaac(self.found_data)
         self.connection_manager = ConnectionManager(self.found_data)
+        self.time_tools = TimeTools(self.found_data)
+        self.console = Console(self.found_data)
         self.client = Client(self.found_data)
 
     def run(self) -> bool:
@@ -57,8 +63,12 @@ class Nxt(BackgroundTaskThread):
         # Run this first until the refactor is complete. Right now, client has to be defined in self.client.run()
         if not self.client.run(self.bv):
             # TODO define MainState enum
-            log_error("Failed to refactor jag::Client fully.")
+            log_error("Failed to refactor jag::Client.")
+        if not self.time_tools.run(self.bv):
+            log_error("Failed to refactor jag::game::TimeTools")
         self.found_data.types.create_types(self.bv)
+        if not self.console.run(self.bv):
+            log_error("Failed to refactor jag::game::Console")
         if not self.connection_manager.run(self.bv):
             log_error("Failed to refactor connection manager")
         if not self.packet_handlers.run(self.bv):
@@ -66,7 +76,7 @@ class Nxt(BackgroundTaskThread):
         if not self.client_tcp_message.run(self.bv):
             log_error("Failed to refactor client tcp message")
         if not self.isaac_cipher.run(self.bv):
-            log_error("Failed to refactor the jag::Isaac fully.")
+            log_error("Failed to refactor the jag::Isaac")
 
         self.found_data.print_info()
         show_message_box("BinjaNxt", 'Done!', MessageBoxButtonSet.OKButtonSet, MessageBoxIcon.InformationIcon)
