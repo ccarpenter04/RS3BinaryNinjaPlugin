@@ -26,6 +26,7 @@ class TimeTools:
 
     def run(self, bv: BinaryView) -> bool:
         format_real_time_seconds_func = None
+
         for string in bv.strings:
             if string.value == '%H:%M:%S':
                 xrefs = list(bv.get_code_refs(string.start))
@@ -43,4 +44,18 @@ class TimeTools:
         if format_real_time_seconds_func is None:
             return False
         change_func_name(format_real_time_seconds_func, "jag::game::TimeTools::FormatRealTimeSeconds")
+
+        eastl_basic_string_range_intialize_func = None
+        for insn in format_real_time_seconds_func.llil.instructions:
+            if isinstance(insn, LowLevelILCall):
+                eastl_basic_string_range_intialize_func = get_called_func(bv, insn)
+                if eastl_basic_string_range_intialize_func is not None:
+                    log_info('Found eastl::basic_string<char, eastl::allocator>::RangeInitialize @ ' + hex(
+                        eastl_basic_string_range_intialize_func.start))
+                    self.found_data.eastl_basic_string_range_intialize = eastl_basic_string_range_intialize_func
+                    break
+        if eastl_basic_string_range_intialize_func is None:
+            return False
+        change_func_name(eastl_basic_string_range_intialize_func,
+                         "eastl::basic_string<char, eastl::allocator>::RangeInitialize")
         return True

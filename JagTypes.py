@@ -65,6 +65,15 @@ class JagTypes:
     console_name = "jag::game::Console"
     console: Optional[Type] = None
 
+    minimenu_name = "jag::MiniMenu"
+    minimenu: Optional[Type] = None
+
+    obj_type_name = "jag::game::ObjType"
+    obj_type: Optional[Type] = None
+
+    world_name = "jag::game::World"
+    world: Optional[Type] = None
+
     def create_types(self, bv: BinaryView):
         t_isaac = Type.structure(members=[
             (Type.int(4, False), 'valuesRemaining'),  # This may actually be values used, investigate.
@@ -213,3 +222,22 @@ class JagTypes:
         ], packed=True)
         bv.define_user_type(self.console_name, t_console)
         self.console = bv.get_type_by_name(self.console_name)
+
+        t_minimenu = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.minimenu_name, t_minimenu)
+        self.minimenu = bv.get_type_by_name(self.minimenu_name)
+
+        t_world = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.world_name, t_world)
+        self.world = bv.get_type_by_name(self.world_name)
+
+        t_obj_type = Type.structure(members=[
+            # TODO
+        ], packed=True, ).mutable_copy()
+        t_obj_type.width = 0x33c
+        bv.define_user_type(self.obj_type_name, t_obj_type.immutable_copy())
+        self.obj_type = bv.get_type_by_name(self.obj_type_name)

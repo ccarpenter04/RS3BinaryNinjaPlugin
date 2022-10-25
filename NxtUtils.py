@@ -163,5 +163,13 @@ def find_allocation_from_ctor_call(bv: BinaryView,
             return None
 
         return AllocationDetails(size.value, alignment.value if not isinstance(alignment, Undetermined) else 16)
-
     return None
+
+
+def recursive_call_count(bv: BinaryView, func: Function) -> int:
+    self_call_quantity = 0
+    xrefs = bv.get_code_refs(func.start)
+    for xref in xrefs:
+        if xref.address != func.start and xref.function.start == func.start:
+            self_call_quantity += 1
+    return self_call_quantity

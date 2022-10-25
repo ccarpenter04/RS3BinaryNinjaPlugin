@@ -13,18 +13,19 @@ If not, see <https://www.gnu.org/licenses/>.
 """
 from BinjaNxt.Client import Client
 from BinjaNxt.ClientTcpMessage import ClientTcpMessage
+from BinjaNxt.ConnectionManager import ConnectionManager
+from BinjaNxt.Console import Console
 from BinjaNxt.Isaac import Isaac
 from BinjaNxt.JagTypes import *
+from BinjaNxt.MiniMenu import MiniMenu
 from BinjaNxt.NxtAnalysisData import NxtAnalysisData
 from BinjaNxt.NxtUtils import *
 from BinjaNxt.PacketHandler import PacketHandlers
+from BinjaNxt.SystemPaths import SystemPaths
+from BinjaNxt.TimeTools import TimeTools
 from binaryninja import *
 from binaryninja.log import log_error
 from binaryninja.plugin import BackgroundTaskThread
-
-from BinjaNxt.ConnectionManager import ConnectionManager
-from BinjaNxt.TimeTools import TimeTools
-from BinjaNxt.Console import Console
 
 
 # from NxtAnalysisData import NxtAnalysisData
@@ -43,6 +44,8 @@ class Nxt(BackgroundTaskThread):
     connection_manager: ConnectionManager
     console: Console
     time_tools: TimeTools
+    system_paths: SystemPaths
+    minimenu: MiniMenu
     client: Client
 
     def __init__(self, binv: BinaryView):
@@ -54,7 +57,9 @@ class Nxt(BackgroundTaskThread):
         self.isaac_cipher = Isaac(self.found_data)
         self.connection_manager = ConnectionManager(self.found_data)
         self.time_tools = TimeTools(self.found_data)
+        self.system_paths = SystemPaths(self.found_data)
         self.console = Console(self.found_data)
+        self.minimenu = MiniMenu(self.found_data)
         self.client = Client(self.found_data)
 
     def run(self) -> bool:
@@ -66,7 +71,13 @@ class Nxt(BackgroundTaskThread):
             log_error("Failed to refactor jag::Client.")
         if not self.time_tools.run(self.bv):
             log_error("Failed to refactor jag::game::TimeTools")
+        if not self.system_paths.run(self.bv):
+            log_error("Failed to refactor jag::SystemPaths")
         self.found_data.types.create_types(self.bv)
+        if not self.minimenu.run(self.bv):
+            log_error("Failed to refactor jag::MiniMenu")
+        if not self.isaac_cipher.run(self.bv):
+            log_error("Failed to refactor the jag::Isaac")
         if not self.console.run(self.bv):
             log_error("Failed to refactor jag::game::Console")
         if not self.connection_manager.run(self.bv):
@@ -75,8 +86,6 @@ class Nxt(BackgroundTaskThread):
             log_error('Failed to refactor packets')
         if not self.client_tcp_message.run(self.bv):
             log_error("Failed to refactor client tcp message")
-        if not self.isaac_cipher.run(self.bv):
-            log_error("Failed to refactor the jag::Isaac")
 
         self.found_data.print_info()
         show_message_box("BinjaNxt", 'Done!', MessageBoxButtonSet.OKButtonSet, MessageBoxIcon.InformationIcon)
