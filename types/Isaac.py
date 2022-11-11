@@ -20,6 +20,7 @@ from binaryninja import *
 
 class Isaac:
     found_data: NxtAnalysisData
+    GOLDEN_RATIO = 0x9e3779b9
 
     def __init__(self, found_data: NxtAnalysisData):
         self.found_data = found_data
@@ -35,7 +36,7 @@ class Isaac:
             isaac_cipher_key = 0
             isaac_constants_found = 0
             for insn in func.llil.instructions:
-                isaac_cipher_key += insn.prefix_operands.count(0x9e3779b9)
+                isaac_cipher_key += insn.prefix_operands.count(self.GOLDEN_RATIO)
                 quantity_of_constant = insn.prefix_operands.count(0x404)
                 isaac_constants_found += quantity_of_constant
             if isaac_constants_found >= 1 and isaac_cipher_key == 1:

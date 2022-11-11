@@ -65,8 +65,9 @@ class Client:
         log_info("jag::Client::SetMainState is {}".format(hex(located_func.start)))
         self.set_main_state_function = located_func
         change_func_name(located_func, 'jag::Client::SetMainState')
-        change_var(located_func.parameter_vars[0], "pClient",
+        change_var(located_func.parameter_vars[0], "this",
                    Type.pointer(bv.arch, self.found_data.types.client))
+        change_var(located_func.parameter_vars[1], "state", self.found_data.types.main_state)
         for insn in located_func.llil.instructions:
             if not isinstance(insn, LowLevelILConstPtr):
                 continue
@@ -159,11 +160,19 @@ class Client:
                 found_alloc = True
                 checked_alloc = bv.get_function_at(dest_addr)
                 self.found_data.checked_alloc_addr = checked_alloc.start
-                change_func_name(checked_alloc, '{}::CheckedAlloc'.format(self.found_data.types.heap_interface_name))
+                change_func_name(checked_alloc, '{}::GlobalAlloc'.format(self.found_data.types.heap_interface_name))
                 change_ret_type(checked_alloc, Type.pointer(bv.arch, Type.void()))
                 change_var(checked_alloc.parameter_vars[0], 'num_bytes', Type.int(4))
                 change_var(checked_alloc.parameter_vars[1], 'alignment', Type.int(4))
-
+                for call_insn_llil in checked_alloc.llil.instructions:
+                    if isinstance(call_insn_llil, LowLevelILCall):
+                        alloc = get_called_func(bv, call_insn_llil)
+                        if alloc is not None and len(list(alloc.parameter_vars)) == 3:
+                            change_func_name(alloc, '{}::Alloc'.format(self.found_data.types.heap_interface_name))
+                            change_ret_type(alloc, Type.pointer(bv.arch, Type.void()))
+                            change_var(alloc.parameter_vars[0], 'this', Type.pointer(bv.arch, Type.void()))
+                            change_var(alloc.parameter_vars[1], 'num_bytes', Type.int(4))
+                            change_var(alloc.parameter_vars[2], 'alignment', Type.int(4))
             else:
                 with StructureBuilder.builder(bv, QualifiedName(self.found_data.types.client_name)) as client_builder:
                     client_builder.members = [
@@ -177,8 +186,8 @@ class Client:
 
                 client_ctor = bv.get_function_at(dest_addr)
                 self.found_data.client_ctor_addr = client_ctor.start
-                change_func_name(client_ctor, '{}::ctor'.format(self.found_data.types.client_name))
-                change_var(client_ctor.parameter_vars[0], 'pClient',
+                change_func_name(client_ctor, '{}::Client'.format(self.found_data.types.client_name))
+                change_var(client_ctor.parameter_vars[0], 'this',
                            Type.pointer(bv.arch, self.found_data.types.client))
                 break
 

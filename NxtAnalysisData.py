@@ -1,10 +1,9 @@
-from typing import Optional, TypedDict
+from typing import Optional
+
+from BinjaNxt.ClientProtInfo import ClientProtInfo
 from BinjaNxt.JagTypes import JagTypes
 from BinjaNxt.PacketHandlerInfo import PacketHandlerInfo
-from BinjaNxt.ClientProtInfo import ClientProtInfo
-
-#from JagTypes import JagTypes
-#from PacketHandlerInfo import PacketHandlerInfo
+from binaryninja import Function
 
 
 class NxtAnalysisData:
@@ -22,6 +21,9 @@ class NxtAnalysisData:
     isaac_init_addr: Optional[int] = None
     isaac_generate_addr: Optional[int] = None
     clientprots: list[ClientProtInfo] = []
+    get_ground_intersection_func: Function = None
+    height_map_get_fine_height_func: Function = None
+    link_map_get_tile_link_func: Function = None
 
     def print_info(self):
         self.packet_handlers.sort(key=lambda x: x.opcode)
@@ -50,4 +52,3 @@ class NxtAnalysisData:
         print('ClientProtSizes')
         for prot in self.clientprots:
             print('{' + '{}, {}'.format(prot.opcode, prot.size) + '},\n')
-

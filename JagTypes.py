@@ -71,18 +71,41 @@ class JagTypes:
     obj_type_name = "jag::game::ObjType"
     obj_type: Optional[Type] = None
 
+    loc_type_name = "jag::game::LocType"
+    loc_type: Optional[Type] = None
+
     world_name = "jag::game::World"
     world: Optional[Type] = None
 
-    def create_types(self, bv: BinaryView):
+    height_map_name = "jag::game::HeightMap"
+    height_map: Optional[Type] = None
+
+    link_map_name = "jag::game::LinkMap"
+    link_map: Optional[Type] = None
+
+    main_state_name = "jag::MainState"
+    main_state: Optional[Type] = None
+
+    def create_enums(self, bv: BinaryView):
+        e_main_state = Type.enumeration(bv.arch, members=[
+            ("STARTING", 0),
+            ("LOGIN_SCREEN", 10),
+            ("LOBBY", 20),
+            ("LOGGED_IN", 30),
+            ("WORLD_HOPPING", 37)
+        ])
+        bv.define_user_type(self.main_state_name, e_main_state)
+        self.main_state = bv.get_type_by_name(self.main_state_name)
+
+    def create_structs(self, bv: BinaryView):
         t_isaac = Type.structure(members=[
-            (Type.int(4, False), 'valuesRemaining'),  # This may actually be values used, investigate.
+            (Type.int(4, False), 'remainingResultCount'),
             (Type.array(Type.int(4, False), 256), 'results'),
-            (Type.array(Type.int(4, False), 256), 'mm'),
+            (Type.array(Type.int(4, False), 256), 'memory'),  # Sometimes known as m or mm
             # One of these is the counter, another is the accumulator
-            (Type.int(4), 'aa'),
-            (Type.int(4), 'bb'),
-            (Type.int(4), 'cc')
+            (Type.int(4), 'accumulatre'),  # Often known as a or aa
+            (Type.int(4), 'previous'),  # Often known as b or bb
+            (Type.int(4), 'counter')  # Often known as c or cc
         ], packed=True)
         bv.define_user_type(self.isaac_name, t_isaac)
         self.isaac = bv.get_type_by_name(self.isaac_name)
@@ -131,7 +154,6 @@ class JagTypes:
             (Type.int(8), 'unknown_1'),
             # This is usually either 99 or 120
             (Type.int(8), 'levels_available'),
-            # The middle argument is invalid, not sure what it should be,
         ], packed=True)
         bv.define_user_type(self.player_skill_xp_table_name, t_player_skill_xp_table)
         self.player_skill_xp_table = bv.get_type_by_name(self.player_skill_xp_table_name)
@@ -235,9 +257,28 @@ class JagTypes:
         bv.define_user_type(self.world_name, t_world)
         self.world = bv.get_type_by_name(self.world_name)
 
+        t_height_map = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.height_map_name, t_height_map)
+        self.height_map = bv.get_type_by_name(self.height_map_name)
+
+        t_link_map = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.link_map_name, t_link_map)
+        self.link_map = bv.get_type_by_name(self.link_map_name)
+
         t_obj_type = Type.structure(members=[
             # TODO
         ], packed=True, ).mutable_copy()
         t_obj_type.width = 0x33c
         bv.define_user_type(self.obj_type_name, t_obj_type.immutable_copy())
         self.obj_type = bv.get_type_by_name(self.obj_type_name)
+
+        t_loc_type = Type.structure(members=[
+            # TODO
+        ], packed=True, ).mutable_copy()
+        t_loc_type.width = 0x33c
+        bv.define_user_type(self.loc_type_name, t_loc_type.immutable_copy())
+        self.loc_type = bv.get_type_by_name(self.loc_type_name)

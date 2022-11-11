@@ -23,6 +23,8 @@ from BinjaNxt.NxtUtils import *
 from BinjaNxt.PacketHandler import PacketHandlers
 from BinjaNxt.SystemPaths import SystemPaths
 from BinjaNxt.TimeTools import TimeTools
+from BinjaNxt.LocType import LocType
+from BinjaNxt.HeightMapAndLinkMap import HeightMapAndLinkMap
 from binaryninja import *
 from binaryninja.log import log_error
 from binaryninja.plugin import BackgroundTaskThread
@@ -47,6 +49,8 @@ class Nxt(BackgroundTaskThread):
     system_paths: SystemPaths
     minimenu: MiniMenu
     client: Client
+    height_and_link_map: HeightMapAndLinkMap
+    loc_type: LocType
 
     def __init__(self, binv: BinaryView):
         BackgroundTaskThread.__init__(self, 'Beginning pattern recognition for NXT structures', True)
@@ -61,21 +65,28 @@ class Nxt(BackgroundTaskThread):
         self.console = Console(self.found_data)
         self.minimenu = MiniMenu(self.found_data)
         self.client = Client(self.found_data)
+        self.height_and_link_map = HeightMapAndLinkMap(self.found_data)
+        self.loc_type = LocType(self.found_data)
 
     def run(self) -> bool:
         if self.bv is None:
             return False
+        self.found_data.types.create_enums(self.bv)
         # Run this first until the refactor is complete. Right now, client has to be defined in self.client.run()
         if not self.client.run(self.bv):
             # TODO define MainState enum
-            log_error("Failed to refactor jag::Client.")
+            log_error("Failed to refactor jag::Client")
         if not self.time_tools.run(self.bv):
             log_error("Failed to refactor jag::game::TimeTools")
         if not self.system_paths.run(self.bv):
             log_error("Failed to refactor jag::SystemPaths")
-        self.found_data.types.create_types(self.bv)
+        self.found_data.types.create_structs(self.bv)
         if not self.minimenu.run(self.bv):
             log_error("Failed to refactor jag::MiniMenu")
+        if not self.height_and_link_map.run(self.bv):
+            log_error("Failed to refactor jag::game::HeightMap and jag::game::LinkMap")
+        if not self.loc_type.run(self.bv):
+            log_error("Failed to refactor jag::game::LocType")
         if not self.isaac_cipher.run(self.bv):
             log_error("Failed to refactor the jag::Isaac")
         if not self.console.run(self.bv):

@@ -89,7 +89,6 @@ class MiniMenu:
         return True
 
     def find_get_ground_intersection(self, bv: BinaryView) -> bool:
-        get_ground_intersection_func = None
         for func in bv.functions:
             if len(func.parameter_vars) != 5:
                 continue
@@ -100,14 +99,14 @@ class MiniMenu:
                         for operand in insn.condition.prefix_operands:
                             if operand == 2:
                                 log_info("Found jag::MiniMenu::GetGroundIntersection @ {}".format(hex(func.start)))
-                                get_ground_intersection_func = func
-        if get_ground_intersection_func is None:
+                                self.found_data.get_ground_intersection_func = func
+        if self.found_data.get_ground_intersection_func is None:
             log_warn("Unable to find jag::MiniMenu::GetGroundIntersection")
             return False
-        change_func_name(get_ground_intersection_func, "jag::MiniMenu::GetGroundIntersection")
-        change_var_type(get_ground_intersection_func.parameter_vars[0],
+        change_func_name(self.found_data.get_ground_intersection_func, "jag::MiniMenu::GetGroundIntersection")
+        change_var(self.found_data.get_ground_intersection_func.parameter_vars[0], "pMiniMenu",
                         Type.pointer(bv.arch, self.found_data.types.minimenu))
-        change_var_type(get_ground_intersection_func.parameter_vars[1],
+        change_var(self.found_data.get_ground_intersection_func.parameter_vars[1], "pWorld",
                         Type.pointer(bv.arch, self.found_data.types.world))
         return True
 
