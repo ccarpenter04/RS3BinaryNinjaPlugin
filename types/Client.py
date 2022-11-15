@@ -81,12 +81,12 @@ class Client:
         """
         set_error_modes = bv.get_symbols_by_name('SetErrorMode')
         if len(set_error_modes) == 0:
-            log_debug("Couldn't find the symbol Kernel32::SetErrorMode")
+            log_warn("Couldn't find the symbol Kernel32::SetErrorMode")
             return False
         set_error_mode_addr = set_error_modes[-1].address
         xrefs = list(bv.get_code_refs(set_error_mode_addr))
         if len(xrefs) != 1:
-            log_debug('SetErrorMode is referenced {} times'.format(len(xrefs)))
+            log_warn('SetErrorMode is referenced {} times'.format(len(xrefs)))
             return False
         target_func = xrefs[0].function
         log_info('Found jag::Client::MainInit @ {:#x}'.format(target_func.start))

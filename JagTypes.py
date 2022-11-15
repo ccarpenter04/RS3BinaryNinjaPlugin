@@ -105,15 +105,20 @@ class JagTypes:
         bv.define_user_type(self.baseapp_name, t_baseapp)
         self.baseapp = bv.get_type_by_name(self.baseapp_name)
 
+        t_heap_interface = Type.structure(members=[], packed=True).mutable_copy()
+        bv.define_user_type(self.heap_interface_name, t_heap_interface)
+        self.heap_interface = bv.get_type_by_name(self.heap_interface_name)
+
     def create_enums(self, bv: BinaryView):
         e_main_state = Type.enumeration(bv.arch, members=[
             ("INITIALIZING", 0),
             ("LOGIN_SCREEN", 10),
             ("LOBBY_SCREEN", 20),
+            ("ACCOUNT_CREATION", 23),
             ("LOGGED_IN", 30),
-            ("ATTEMPTING_TO_RE-ESTABLISH", 35),
+            ("ATTEMPTING_TO_REESTABLISH", 35),
             ("PLEASE_WAIT", 37),  # AKA World Hopping... usually
-            ("LOADING_WORLD", 40)
+            ("LOADING", 40)
         ])
         bv.define_user_type(self.main_state_name, e_main_state)
         self.main_state = bv.get_type_by_name(self.main_state_name)
@@ -211,7 +216,9 @@ class JagTypes:
         bv.define_user_type(self.player_game_state_name, t_player_game_state)
         self.player_game_state = bv.get_type_by_name(self.player_game_state_name)
 
-        t_heap_interface = Type.structure(packed=True)
+        t_heap_interface = Type.structure(members=[
+            # TODO
+        ], packed=True)
         bv.define_user_type(self.heap_interface_name, t_heap_interface)
         self.heap_interface = bv.get_type_by_name(self.heap_interface_name)
 
@@ -228,13 +235,6 @@ class JagTypes:
         ], packed=True)
         bv.define_user_type(self.server_prot_name, t_server_prot)
         self.server_prot = bv.get_type_by_name(self.server_prot_name)
-
-        t_packethandler_builder = Type.structure(members=[
-            (Type.pointer(bv.arch, Type.void()), 'vtable')
-        ], packed=True).mutable_copy()
-        t_packethandler_builder.width = 0x48
-        bv.define_user_type(self.packet_handler_name, t_packethandler_builder.immutable_copy())
-        self.packet_handler = bv.get_type_by_name(self.packet_handler_name)
 
         t_packet = Type.structure(members=[
             (Type.int(8), 'unk1'),
@@ -315,3 +315,10 @@ class JagTypes:
         t_loc_type.width = 0x33c
         bv.define_user_type(self.loc_type_name, t_loc_type.immutable_copy())
         self.loc_type = bv.get_type_by_name(self.loc_type_name)
+
+        t_packethandler_builder = Type.structure(members=[
+            (Type.pointer(bv.arch, Type.void()), 'vtable')
+        ], packed=True).mutable_copy()
+        t_packethandler_builder.width = 0x48
+        bv.define_user_type(self.packet_handler_name, t_packethandler_builder.immutable_copy())
+        self.packet_handler = bv.get_type_by_name(self.packet_handler_name)
