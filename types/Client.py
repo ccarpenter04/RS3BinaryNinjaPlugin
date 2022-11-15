@@ -30,9 +30,9 @@ class Client:
         if not self.find_main_init(bv):
             Logger.log_warn("Failed to locate jag::Client::MainInit(jag::SystemInitParams const&)")
         if not self.find_checked_alloc_and_client_instance(bv):
-            Logger.log_warn("Failed to locate jag::HeapInterface::CheckedAlloc and/or define client")
+            Logger.log_warn("Failed to locate jag::HeapInterface::GlobalAlloc and/or define client")
         if not self.find_set_main_state(bv):
-            Logger.log_warn("Failed to locate jag::Client::SetMainState(Client*, MainState)")
+            Logger.log_warn("Failed to locate jag::Client::SetMainState(MainState)")
 
         return True
 
@@ -62,7 +62,7 @@ class Client:
                         located_function_size = instruction_count
         if located_func is None:
             return False
-        log_info("jag::Client::SetMainState is {}".format(hex(located_func.start)))
+        log_info("Found jag::Client::SetMainState @ {}".format(hex(located_func.start)))
         self.set_main_state_function = located_func
         change_func_name(located_func, 'jag::Client::SetMainState')
         change_var(located_func.parameter_vars[0], "this",
@@ -71,8 +71,6 @@ class Client:
         for insn in located_func.llil.instructions:
             if not isinstance(insn, LowLevelILConstPtr):
                 continue
-            log_warn("{}".format(insn.value))
-
         return True
 
     def find_main_init(self, bv: BinaryView) -> bool:
@@ -91,9 +89,10 @@ class Client:
             log_debug('SetErrorMode is referenced {} times'.format(len(xrefs)))
             return False
         target_func = xrefs[0].function
-        log_info('jag::Client::MainInit is {:#x}'.format(target_func.start))
+        log_info('Found jag::Client::MainInit @ {:#x}'.format(target_func.start))
         self.main_init_function = target_func
         change_func_name(target_func, 'jag::Client::MainInit')
+        change_var(target_func.parameter_vars[0], "this", Type.pointer(bv.arch, self.found_data.types.client))
         return True
 
     def find_checked_alloc_and_client_instance(self, bv: BinaryView) -> bool:
@@ -102,19 +101,19 @@ class Client:
         if self.find_static_client_instance(bv):
             logmsg: str
             if len(self.found_data.static_client_ptrs) == 1:
-                logmsg = 'Found jag::Client* jag::s_pClient @ {:#x}'.format(self.found_data.static_client_ptrs[0])
+                logmsg = 'Found jag::Client* g_pApp @ {:#x}'.format(self.found_data.static_client_ptrs[0])
                 bv.define_data_var(self.found_data.static_client_ptrs[0],
                                    Type.pointer(bv.arch, self.found_data.types.client),
-                                   'jag::s_pClient')
+                                   'g_pApp')
             else:
-                logmsg = 'Found multiple jag::Client* jag::s_pClient'
+                logmsg = 'Found multiple jag::Client*'
                 for idx, ptr in enumerate(self.found_data.static_client_ptrs):
                     logmsg += '\n    @ {:#x}'.format(ptr)
-                    name = 'jag::s_pClient'
+                    name = 'g_pApp'
                     if idx > 0:
                         name += str(idx)
 
-                    bv.define_data_var(self.found_data.static_client_ptrs[0],
+                    bv.define_data_var(self.found_data.static_client_ptrs[idx],
                                        Type.pointer(bv.arch, self.found_data.types.client),
                                        name)
 
@@ -170,7 +169,7 @@ class Client:
                         if alloc is not None and len(list(alloc.parameter_vars)) == 3:
                             change_func_name(alloc, '{}::Alloc'.format(self.found_data.types.heap_interface_name))
                             change_ret_type(alloc, Type.pointer(bv.arch, Type.void()))
-                            change_var(alloc.parameter_vars[0], 'this', Type.pointer(bv.arch, Type.void()))
+                            change_var(alloc.parameter_vars[0], 'this', Type.pointer(bv.arch, self.found_data.types.heap_interface))
                             change_var(alloc.parameter_vars[1], 'num_bytes', Type.int(4))
                             change_var(alloc.parameter_vars[2], 'alignment', Type.int(4))
             else:
@@ -183,10 +182,10 @@ class Client:
                     client_builder.width = client_struct_size
 
                 self.found_data.types.client = bv.get_type_by_name(self.found_data.types.client_name)
-
                 client_ctor = bv.get_function_at(dest_addr)
                 self.found_data.client_ctor_addr = client_ctor.start
                 change_func_name(client_ctor, '{}::Client'.format(self.found_data.types.client_name))
+                change_ret_type(client_ctor, Type.pointer(bv.arch, self.found_data.types.client))
                 change_var(client_ctor.parameter_vars[0], 'this',
                            Type.pointer(bv.arch, self.found_data.types.client))
                 break
@@ -196,7 +195,7 @@ class Client:
             client_ctor = bv.get_function_at(self.found_data.client_ctor_addr)
             vtable_assign_insn: Optional[HighLevelILAssign] = None
             for idx, insn in enumerate(list(client_ctor.hlil.instructions)):
-                if idx >= 4:
+                if idx >= 5:
                     log_error('Failed to locate vtable of jag::Client')
                     break
 
@@ -230,13 +229,13 @@ class Client:
         """
         ctor_refs = list(bv.get_code_refs(self.found_data.client_ctor_addr))
         if len(ctor_refs) != 1:
-            log_error('Expected 1 ref to jag::Client::ctor but found {}'.format(len(ctor_refs)))
+            log_error('Expected 1 xref to jag::Client::Client() but found {}'.format(len(ctor_refs)))
             return False
 
         call_site_addr = ctor_refs[0].address
         containing_funcs = bv.get_functions_containing(call_site_addr)
         if len(containing_funcs) != 1:
-            log_error('Expected 1 func containing call to jag::Client::ctor but found {}'.format(len(containing_funcs)))
+            log_error('Expected 1 func containing a call to jag::Client::Client() but found {}'.format(len(containing_funcs)))
             return False
 
         func = containing_funcs[0]

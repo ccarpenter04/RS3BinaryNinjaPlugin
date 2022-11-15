@@ -105,8 +105,8 @@ class ConnectionManager:
         allocation = find_allocation_from_ctor_call(bv,
                                                     list(
                                                         ctor_refs[0].function.llil_instructions),
-                                                        ctor_refs[0].function.get_llil_at(ctor_refs[0].address),
-                                                        self.found_data.checked_alloc_addr)
+                                                    ctor_refs[0].function.get_llil_at(ctor_refs[0].address),
+                                                    self.found_data.checked_alloc_addr)
         if allocation is None:
             log_debug('Failed to determine size of jag::ConnectionManager')
             return False
@@ -119,10 +119,12 @@ class ConnectionManager:
         self.found_data.types.conn_mgr = bv.get_type_by_name(self.found_data.types.conn_mgr_name)
 
         self.found_data.connection_manager_ctor_addr = ctor.start
-        log_info('Found jag::ConnectionManager::ctor at {:#x}'.format(self.found_data.connection_manager_ctor_addr))
+        log_info('Found jag::ConnectionManager::ConnectionManager @ {:#x}'.format(
+            self.found_data.connection_manager_ctor_addr))
 
-        change_func_name(ctor, '{}::ctor'.format(self.found_data.types.conn_mgr_name))
-        change_var(ctor.parameter_vars[0], "unknown1", Type.pointer(bv.arch, self.found_data.types.conn_mgr))
+        change_func_name(ctor, '{}::ConnectionManager'.format(self.found_data.types.conn_mgr_name))
+        change_ret_type(ctor, Type.pointer(bv.arch, self.found_data.types.conn_mgr))
+        change_var(ctor.parameter_vars[0], "this", Type.pointer(bv.arch, self.found_data.types.conn_mgr))
         change_var(ctor.parameter_vars[1], "pClient", Type.pointer(bv.arch, self.found_data.types.client))
         return True
 

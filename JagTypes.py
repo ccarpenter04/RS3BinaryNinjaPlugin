@@ -9,6 +9,9 @@ class JagTypes:
     client_name = 'jag::Client'
     client: Optional[Type] = None
 
+    baseapp_name = 'jag::BaseApp'
+    baseapp: Optional[Type] = None
+
     isaac_name = 'jag::Isaac'
     isaac: Optional[Type] = None
 
@@ -44,6 +47,9 @@ class JagTypes:
 
     hitmark_name = 'jag::Hitmark'
     hitmark: Optional[Type] = None
+
+    npc_list_name = 'jag::NPCList'
+    npc_list: Optional[Type] = None
 
     player_game_state_name = 'jag::game::PlayerGameState'
     player_game_state: Optional[Type] = None
@@ -83,16 +89,31 @@ class JagTypes:
     link_map_name = "jag::game::LinkMap"
     link_map: Optional[Type] = None
 
+    client_watch_name = "jag::ClientWatch"
+    client_watch: Optional[Type] = None
+
     main_state_name = "jag::MainState"
     main_state: Optional[Type] = None
 
+    def __init__(self, bv: BinaryView):
+        # Add a dummy client instance to use until the real one is declared with the proper size.
+        t_client = Type.structure(members=[], packed=True).mutable_copy()
+        bv.define_user_type(self.client_name, t_client)
+        self.client = bv.get_type_by_name(self.client_name)
+
+        t_baseapp = Type.structure(members=[], packed=True).mutable_copy()
+        bv.define_user_type(self.baseapp_name, t_baseapp)
+        self.baseapp = bv.get_type_by_name(self.baseapp_name)
+
     def create_enums(self, bv: BinaryView):
         e_main_state = Type.enumeration(bv.arch, members=[
-            ("STARTING", 0),
+            ("INITIALIZING", 0),
             ("LOGIN_SCREEN", 10),
-            ("LOBBY", 20),
+            ("LOBBY_SCREEN", 20),
             ("LOGGED_IN", 30),
-            ("WORLD_HOPPING", 37)
+            ("ATTEMPTING_TO_RE-ESTABLISH", 35),
+            ("PLEASE_WAIT", 37),  # AKA World Hopping... usually
+            ("LOADING_WORLD", 40)
         ])
         bv.define_user_type(self.main_state_name, e_main_state)
         self.main_state = bv.get_type_by_name(self.main_state_name)
@@ -103,7 +124,7 @@ class JagTypes:
             (Type.array(Type.int(4, False), 256), 'results'),
             (Type.array(Type.int(4, False), 256), 'memory'),  # Sometimes known as m or mm
             # One of these is the counter, another is the accumulator
-            (Type.int(4), 'accumulatre'),  # Often known as a or aa
+            (Type.int(4), 'accumulator'),  # Often known as a or aa
             (Type.int(4), 'previous'),  # Often known as b or bb
             (Type.int(4), 'counter')  # Often known as c or cc
         ], packed=True)
@@ -257,6 +278,12 @@ class JagTypes:
         bv.define_user_type(self.world_name, t_world)
         self.world = bv.get_type_by_name(self.world_name)
 
+        t_client_watch = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.client_watch_name, t_client_watch)
+        self.client_watch = bv.get_type_by_name(self.client_watch_name)
+
         t_height_map = Type.structure(members=[
             # TODO
         ], packed=True)
@@ -268,6 +295,12 @@ class JagTypes:
         ], packed=True)
         bv.define_user_type(self.link_map_name, t_link_map)
         self.link_map = bv.get_type_by_name(self.link_map_name)
+
+        t_npc_list = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.npc_list_name, t_npc_list)
+        self.npc_list = bv.get_type_by_name(self.npc_list_name)
 
         t_obj_type = Type.structure(members=[
             # TODO

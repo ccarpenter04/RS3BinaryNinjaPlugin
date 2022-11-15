@@ -25,6 +25,8 @@ from BinjaNxt.SystemPaths import SystemPaths
 from BinjaNxt.TimeTools import TimeTools
 from BinjaNxt.LocType import LocType
 from BinjaNxt.HeightMapAndLinkMap import HeightMapAndLinkMap
+from BinjaNxt.NPCList import NPCList
+from BinjaNxt.IdentifiableConstants import IdentifiableConstants
 from binaryninja import *
 from binaryninja.log import log_error
 from binaryninja.plugin import BackgroundTaskThread
@@ -51,11 +53,13 @@ class Nxt(BackgroundTaskThread):
     client: Client
     height_and_link_map: HeightMapAndLinkMap
     loc_type: LocType
+    npc_list: NPCList
+    constants: IdentifiableConstants
 
     def __init__(self, binv: BinaryView):
         BackgroundTaskThread.__init__(self, 'Beginning pattern recognition for NXT structures', True)
         self.bv = binv
-        self.found_data = NxtAnalysisData()
+        self.found_data = NxtAnalysisData(binv)
         self.packet_handlers = PacketHandlers(self.found_data)
         self.client_tcp_message = ClientTcpMessage(self.found_data)
         self.isaac_cipher = Isaac(self.found_data)
@@ -67,20 +71,27 @@ class Nxt(BackgroundTaskThread):
         self.client = Client(self.found_data)
         self.height_and_link_map = HeightMapAndLinkMap(self.found_data)
         self.loc_type = LocType(self.found_data)
+        self.npc_list = NPCList(self.found_data)
+        self.constants = IdentifiableConstants(self.found_data)
 
     def run(self) -> bool:
         if self.bv is None:
             return False
+
         self.found_data.types.create_enums(self.bv)
+        if not self.constants.run(self.bv):
+            log_error("Failed to refactor known constants")
+
         # Run this first until the refactor is complete. Right now, client has to be defined in self.client.run()
         if not self.client.run(self.bv):
-            # TODO define MainState enum
             log_error("Failed to refactor jag::Client")
         if not self.time_tools.run(self.bv):
             log_error("Failed to refactor jag::game::TimeTools")
         if not self.system_paths.run(self.bv):
             log_error("Failed to refactor jag::SystemPaths")
         self.found_data.types.create_structs(self.bv)
+        if not self.npc_list.run(self.bv):
+            log_error("Failed to refactor jag::NPCList")
         if not self.minimenu.run(self.bv):
             log_error("Failed to refactor jag::MiniMenu")
         if not self.height_and_link_map.run(self.bv):
@@ -92,12 +103,11 @@ class Nxt(BackgroundTaskThread):
         if not self.console.run(self.bv):
             log_error("Failed to refactor jag::game::Console")
         if not self.connection_manager.run(self.bv):
-            log_error("Failed to refactor connection manager")
+            log_error("Failed to refactor jag::ConnectionManager")
         if not self.packet_handlers.run(self.bv):
             log_error('Failed to refactor packets')
         if not self.client_tcp_message.run(self.bv):
             log_error("Failed to refactor client tcp message")
-
-        self.found_data.print_info()
+        self.bv.update_analysis_and_wait()
         show_message_box("BinjaNxt", 'Done!', MessageBoxButtonSet.OKButtonSet, MessageBoxIcon.InformationIcon)
         return True

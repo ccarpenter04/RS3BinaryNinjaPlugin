@@ -41,13 +41,14 @@ class PacketHandlers:
         packet_handler_ctor = self.find_packet_handler_ctor_and_register(bv)
         if packet_handler_ctor is None:
             return False
-
-        log_info('Found RegisterPacketHandler @ ' + hex(self.found_data.register_packet_handler_addr))
+        log_info('Found jag::RegisterPacketHandler @ ' + hex(self.found_data.register_packet_handler_addr))
         change_func_name(bv.get_function_at(self.found_data.register_packet_handler_addr), 'jag::RegisterPacketHandler')
 
-        log_info('Found jag::PacketHandler::ctor @ ' + packet_handler_ctor.name)
-        change_func_name(packet_handler_ctor, 'jag::PacketHandler::ctor')
-
+        log_info('Found jag::PacketHandler::PacketHandler @ ' + hex(packet_handler_ctor.start))
+        change_func_name(packet_handler_ctor, 'jag::PacketHandler::PacketHandler')
+        change_var(packet_handler_ctor.parameter_vars[0], "this",
+                   Type.pointer(bv.arch, self.found_data.types.packet_handler))
+        change_ret_type(packet_handler_ctor, Type.pointer(bv.arch, self.found_data.types.packet_handler))
         if not self.__initialize_server_packet_infos(bv, packet_handler_ctor):
             log_error('Failed to initialize PacketHandler info')
             return False
@@ -63,7 +64,7 @@ class PacketHandlers:
             qualified_handler_name, clean_name = self.get_qualified_handler_name(handler.name)
             handler_ctor = bv.get_function_at(handler.ctor)
             change_func_name(handler_ctor, '{}::ctor'.format(qualified_handler_name))
-
+            # change_ret_type(handler_ctor, Type.void())
             bv.define_data_var(handler.addr - 0x8,
                                self.found_data.types.server_prot,
                                'jag::ServerProt::{}'.format(handler.name))
@@ -153,7 +154,7 @@ class PacketHandlers:
     def __initialize_server_packet_handler_names(self, bv: BinaryView,
                                                  connection_manager_ctor_addr: Optional[int]) -> bool:
         if connection_manager_ctor_addr is None:
-            print('Address of jag::ConnectionManager::ctor is required to name packet handlers')
+            print('Address of jag::ConnectionManager::ConnectionManager is required to name packet handlers')
             return False
 
         connection_manager_ctor = bv.get_function_at(connection_manager_ctor_addr)
