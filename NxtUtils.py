@@ -11,7 +11,7 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with BinjaNxt.
 If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import Optional
+from typing import Optional, Set
 
 from binaryninja import Function, Type, Undetermined, Variable, BinaryView, RegisterName, log_debug
 from binaryninja import LowLevelILInstruction, LowLevelILCall
@@ -115,6 +115,36 @@ def change_func_name(func: Function, name: str):
 def change_ret_type(func: Function, ret_type: Type):
     if func.return_type != ret_type:
         func.return_type = ret_type
+
+
+def get_all_functions_containing_all_constants(bv: BinaryView, start_address: int, end_address: int, *constants) -> \
+        Set[Function]:
+    funcs: Set[Function] = set()
+    # First pass - Build a list to use as a base
+    constant = constants[0]
+    result_queue = bv.find_all_constant(start_address, end_address, constant)
+    for address, line in result_queue:
+        for func in bv.get_functions_containing(address):
+            funcs.add(func)
+    # Second pass - build a list of functions for each constant, then check which of the existing funcs aren't in the
+    #               new constants List[Function]
+    first_constant = True
+    for constant in constants:
+        if first_constant:
+            first_constant = False
+            continue
+        result_queue = bv.find_all_constant(start_address, end_address, constant)
+        funcs_for_constant: Set[Function] = set()
+        for address, line in result_queue:
+            for func in bv.get_functions_containing(address):
+                funcs_for_constant.add(func)
+        funcs_to_remove = set()
+        for func in funcs:
+            if not funcs_for_constant.__contains__(func):
+                funcs_to_remove.add(func)
+        for func in funcs_to_remove:
+            funcs.remove(func)
+    return funcs
 
 
 def find_instruction_index(instructions: list[LowLevelILInstruction], insn: LowLevelILInstruction) -> int:

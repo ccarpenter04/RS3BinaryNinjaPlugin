@@ -1,17 +1,5 @@
-"""
-Copyright 2022 AridTag
-This file is part of BinjaNxt.
-BinjaNxt is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-BinjaNxt is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with BinjaNxt.
-If not, see <https://www.gnu.org/licenses/>.
-"""
 from BinjaNxt.Client import Client
+from BinjaNxt.ClientWatch import ClientWatch
 from BinjaNxt.ClientTcpMessage import ClientTcpMessage
 from BinjaNxt.ConnectionManager import ConnectionManager
 from BinjaNxt.Console import Console
@@ -26,6 +14,7 @@ from BinjaNxt.TimeTools import TimeTools
 from BinjaNxt.LocType import LocType
 from BinjaNxt.HeightMapAndLinkMap import HeightMapAndLinkMap
 from BinjaNxt.NPCList import NPCList
+from BinjaNxt.MainLogicManager import MainLogicManager
 from BinjaNxt.IdentifiableConstants import IdentifiableConstants
 from binaryninja import *
 from binaryninja.log import log_error
@@ -54,6 +43,8 @@ class Nxt(BackgroundTaskThread):
     height_and_link_map: HeightMapAndLinkMap
     loc_type: LocType
     npc_list: NPCList
+    client_watch: ClientWatch
+    main_logic_manager: MainLogicManager
     constants: IdentifiableConstants
 
     def __init__(self, binv: BinaryView):
@@ -72,6 +63,8 @@ class Nxt(BackgroundTaskThread):
         self.height_and_link_map = HeightMapAndLinkMap(self.found_data)
         self.loc_type = LocType(self.found_data)
         self.npc_list = NPCList(self.found_data)
+        self.client_watch = ClientWatch(self.found_data)
+        self.main_logic_manager = MainLogicManager(self.found_data)
         self.constants = IdentifiableConstants(self.found_data)
 
     def run(self) -> bool:
@@ -92,6 +85,10 @@ class Nxt(BackgroundTaskThread):
         self.found_data.types.create_structs(self.bv)
         if not self.npc_list.run(self.bv):
             log_error("Failed to refactor jag::NPCList")
+        if not self.client_watch.run(self.bv):
+            log_error("Failed to refactor jag::ClientWatch")
+        if not self.main_logic_manager.run(self.bv):
+            log_error("Failed to refactor jag::MainLogicManager")
         if not self.minimenu.run(self.bv):
             log_error("Failed to refactor jag::MiniMenu")
         if not self.height_and_link_map.run(self.bv):

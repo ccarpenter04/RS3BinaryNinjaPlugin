@@ -1,16 +1,3 @@
-"""
-Copyright 2022 AridTag
-This file is part of BinjaNxt.
-BinjaNxt is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-BinjaNxt is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with BinjaNxt.
-If not, see <https://www.gnu.org/licenses/>.
-"""
 from BinjaNxt.JagTypes import *
 from BinjaNxt.NxtAnalysisData import NxtAnalysisData
 from BinjaNxt.NxtUtils import *
@@ -68,9 +55,6 @@ class Client:
         change_var(located_func.parameter_vars[0], "this",
                    Type.pointer(bv.arch, self.found_data.types.client))
         change_var(located_func.parameter_vars[1], "state", self.found_data.types.main_state)
-        for insn in located_func.llil.instructions:
-            if not isinstance(insn, LowLevelILConstPtr):
-                continue
         return True
 
     def find_main_init(self, bv: BinaryView) -> bool:

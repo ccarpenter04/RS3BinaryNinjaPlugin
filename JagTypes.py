@@ -92,6 +92,9 @@ class JagTypes:
     client_watch_name = "jag::ClientWatch"
     client_watch: Optional[Type] = None
 
+    main_logic_manager_name = "jag::MainLogicManager"
+    main_logic_manager: Optional[Type] = None
+
     main_state_name = "jag::MainState"
     main_state: Optional[Type] = None
 
@@ -283,6 +286,12 @@ class JagTypes:
         ], packed=True)
         bv.define_user_type(self.client_watch_name, t_client_watch)
         self.client_watch = bv.get_type_by_name(self.client_watch_name)
+
+        t_main_logic_manager = Type.structure(members=[
+            # TODO
+        ], packed=True)
+        bv.define_user_type(self.main_logic_manager_name, t_main_logic_manager)
+        self.main_logic_manager = bv.get_type_by_name(self.main_logic_manager_name)
 
         t_height_map = Type.structure(members=[
             # TODO

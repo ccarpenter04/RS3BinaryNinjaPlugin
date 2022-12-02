@@ -23,6 +23,8 @@ class NPCList:
             parameter_vars: ParameterVariables = func.parameter_vars
             if len(parameter_vars) == 2:
                 address_of_constant = bv.find_next_constant(func.start, 0x401)
+                if address_of_constant is None:
+                    continue
                 for block in func.basic_blocks:
                     if block.start <= address_of_constant <= block.end:
                         log_info("Found jag::NPCList::NPCList @ {}".format(hex(func.start)))
